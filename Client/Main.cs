@@ -269,10 +269,10 @@ namespace GTACoOp
             _settingsMenu.AddItem(trafficItem);
             _settingsMenu.AddItem(chatItem);
 
-            #if DEBUG
-           
+
+
             _settingsMenu.AddItem(spawnItem);
-            #endif
+
 
             _mainMenu.RefreshIndex();
             _settingsMenu.RefreshIndex();
