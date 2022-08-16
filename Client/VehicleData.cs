@@ -90,7 +90,7 @@ namespace GTACoOp
         [ProtoMember(7)]
         public LVector3 Position { get; set; }
         [ProtoMember(8)]
-        public LQuaternion Quaternion { get; set; }
+        public LVector3 Quaternion { get; set; }
 
         [ProtoMember(9)]
         public int VehicleSeat { get; set; }
@@ -115,6 +115,27 @@ namespace GTACoOp
 
         [ProtoMember(16)]
         public float Speed { get; set; }
+
+        [ProtoMember(17)]
+        public bool IsEngineRunning { get; set; }
+
+        [ProtoMember(18)]
+        public float WheelSpeed { get; set; }
+
+        [ProtoMember(19)]
+        public float Steering { get; set; }
+
+        [ProtoMember(20)]
+        public int RadioStation { get; set; }
+
+        [ProtoMember(21)]
+        public string Plate { get; set; }
+
+        [ProtoMember(22)]
+        public LVector3 Velocity { get; set; }
+
+        [ProtoMember(23)]
+        public Dictionary<int, int> PedProps { get; set; }
     }
 
     [ProtoContract]
@@ -131,7 +152,7 @@ namespace GTACoOp
         [ProtoMember(4)]
         public LVector3 Position { get; set; }
         [ProtoMember(5)]
-        public LQuaternion Quaternion { get; set; }
+        public LVector3 Quaternion { get; set; }
 
         [ProtoMember(6)]
         public bool IsJumping { get; set; }
@@ -156,6 +177,7 @@ namespace GTACoOp
         [ProtoMember(14)]
         public bool IsParachuteOpen { get; set; }
     }
+
 
     [ProtoContract]
     public class PlayerDisconnect
