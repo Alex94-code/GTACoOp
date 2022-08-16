@@ -77,6 +77,13 @@ namespace GTAServer
         public long Id { get; set; }
     }
 
+    [Flags]
+    public enum VehicleDataFlags
+    {
+        IsPressingHorn = 1 << 0,
+        IsSirenActive = 1 << 1,
+    }
+
     [ProtoContract]
     public class VehicleData
     {
@@ -107,27 +114,33 @@ namespace GTAServer
         [ProtoMember(13)]
         public Dictionary<int, int> VehicleMods { get; set; }
         [ProtoMember(14)]
-        public bool IsPressingHorn { get; set; }
-        [ProtoMember(15)]
-        public bool IsSirenActive { get; set; }
-        [ProtoMember(16)]
         public float Speed { get; set; }
-        [ProtoMember(17)]
+        [ProtoMember(15)]
         public bool IsEngineRunning { get; set; }
-        [ProtoMember(18)]
+        [ProtoMember(16)]
         public float WheelSpeed { get; set; }
-        [ProtoMember(19)]
+        [ProtoMember(17)]
         public float Steering { get; set; }
-        [ProtoMember(20)]
+        [ProtoMember(18)]
         public int RadioStation { get; set; }
-        [ProtoMember(21)]
+        [ProtoMember(19)]
         public string Plate { get; set; }
-        [ProtoMember(22)]
+        [ProtoMember(20)]
         public Vector3 Velocity { get; set; }
-        [ProtoMember(23)]
+        [ProtoMember(21)]
         public Dictionary<int, int> PedProps { get; set; }
     }
 
+
+
+    [Flags]
+    public enum PedDataFlags
+    {
+        IsJumping = 1 << 0,
+        IsShooting = 1 << 1,
+        IsAiming = 1 << 2,
+        IsParachuteOpen = 1 << 3
+    }
 
     [ProtoContract]
     public class PedData
@@ -136,38 +149,27 @@ namespace GTAServer
         public long Id { get; set; }
         [ProtoMember(2)]
         public string Name { get; set; }
-
         [ProtoMember(3)]
         public int PedModelHash { get; set; }
-
         [ProtoMember(4)]
         public Vector3 Position { get; set; }
         [ProtoMember(5)]
-        public Quaternion Quaternion { get; set; }
-
+        public Vector3 Quaternion { get; set; }
         [ProtoMember(6)]
-        public bool IsJumping { get; set; }
-        [ProtoMember(7)]
-        public bool IsShooting { get; set; }
-        [ProtoMember(8)]
-        public bool IsAiming { get; set; }
-        [ProtoMember(9)]
         public Vector3 AimCoords { get; set; }
-        [ProtoMember(10)]
+        [ProtoMember(7)]
         public int WeaponHash { get; set; }
-
-        [ProtoMember(11)]
+        [ProtoMember(8)]
         public int PlayerHealth { get; set; }
-
-        [ProtoMember(12)]
+        [ProtoMember(9)]
         public float Latency { get; set; }
-
-        [ProtoMember(13)]
+        [ProtoMember(10)]
         public Dictionary<int, int> PedProps { get; set; }
+        [ProtoMember(11)]
+        public byte? Flag { get; set; }
 
-        [ProtoMember(14)]
-        public bool IsParachuteOpen { get; set; }
     }
+
 
 
     [ProtoContract]

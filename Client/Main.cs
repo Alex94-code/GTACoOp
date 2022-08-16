@@ -488,8 +488,7 @@ namespace GTACoOp
                 obj.PlayerHealth = player.Health;
                 obj.VehicleHealth = veh.Health;
                 obj.VehicleSeat = Util.GetPedSeat(player);
-                obj.IsPressingHorn = Game.Player.IsPressingHorn;
-                obj.IsSirenActive = veh.SirenActive;
+               
                 obj.VehicleMods = CheckPlayerVehicleMods();
                 obj.IsEngineRunning = veh.EngineRunning;
                 obj.WheelSpeed = veh.WheelSpeed;
@@ -500,6 +499,12 @@ namespace GTACoOp
                 obj.Plate = veh.NumberPlate;
 
                 obj.PedProps = CheckPlayerProps();
+
+                if (Game.Player.IsPressingHorn)
+                    obj.Flag |= (byte)VehicleDataFlags.IsPressingHorn;
+                if (veh.SirenActive)
+                    obj.Flag |= (byte)VehicleDataFlags.IsSirenActive;
+
 
                 var bin = SerializeBinary(obj);
 
@@ -530,12 +535,19 @@ namespace GTACoOp
                 obj.PedModelHash = player.Model.Hash;
                 obj.WeaponHash = (int)player.Weapons.Current.Hash;
                 obj.PlayerHealth = player.Health;
-                obj.IsAiming = aiming;
-                obj.IsShooting = shooting;
-                obj.IsJumping = Function.Call<bool>(Hash.IS_PED_JUMPING, player.Handle);
-                obj.IsParachuteOpen = Function.Call<int>(Hash.GET_PED_PARACHUTE_STATE, Game.Player.Character.Handle) == 2;
+                
 
                 obj.PedProps = CheckPlayerProps();
+
+                if (aiming)
+                    obj.Flag |= (byte)PedDataFlags.IsAiming;
+                if (shooting)
+                    obj.Flag |= (byte)PedDataFlags.IsShooting;
+                if (Function.Call<bool>(Hash.IS_PED_JUMPING, player.Handle))
+                    obj.Flag |= (byte)PedDataFlags.IsJumping;
+                if (Function.Call<int>(Hash.GET_PED_PARACHUTE_STATE, Game.Player.Character.Handle) == 2)
+                    obj.Flag |= (byte)PedDataFlags.IsParachuteOpen;
+
 
                 var bin = SerializeBinary(obj);
 
@@ -571,10 +583,13 @@ namespace GTACoOp
                 obj.VehicleSeat = Util.GetPedSeat(ped);
                 obj.Name = ped.Handle.ToString();
                 obj.Speed = veh.Speed;
-                obj.IsSirenActive = veh.SirenActive;
                 obj.WheelSpeed = veh.WheelSpeed;
                 obj.Steering = veh.SteeringAngle;
                 obj.IsEngineRunning = veh.EngineRunning;
+
+                if (veh.SirenActive)
+                    obj.Flag |= (byte)VehicleDataFlags.IsSirenActive;
+
 
                 var bin = SerializeBinary(obj);
 
@@ -604,10 +619,14 @@ namespace GTACoOp
                 obj.WeaponHash = (int)ped.Weapons.Current.Hash;
                 obj.PlayerHealth = ped.Health;
                 obj.Name = ped.Handle.ToString();
-                obj.IsAiming = false;
-                obj.IsShooting = shooting;
-                obj.IsJumping = Function.Call<bool>(Hash.IS_PED_JUMPING, ped.Handle);
-                obj.IsParachuteOpen = Function.Call<int>(Hash.GET_PED_PARACHUTE_STATE, ped.Handle) == 2;
+               
+                if (shooting)
+                    obj.Flag |= (byte)PedDataFlags.IsShooting;
+                if (Function.Call<bool>(Hash.IS_PED_JUMPING, ped.Handle))
+                    obj.Flag |= (byte)PedDataFlags.IsJumping;
+                if (Function.Call<int>(Hash.GET_PED_PARACHUTE_STATE, ped.Handle) == 2)
+                    obj.Flag |= (byte)PedDataFlags.IsParachuteOpen;
+
 
                 var bin = SerializeBinary(obj);
 
@@ -873,9 +892,9 @@ namespace GTACoOp
                                     Opponents[data.Id].Latency = data.Latency;
 
                                     Opponents[data.Id].VehicleMods = data.VehicleMods;
-                                    Opponents[data.Id].IsHornPressed = data.IsPressingHorn;
+                                    Opponents[data.Id].IsHornPressed = (data.Flag & (byte)VehicleDataFlags.IsPressingHorn) > 0;
                                     Opponents[data.Id].Speed = data.Speed;
-                                    Opponents[data.Id].Siren = data.IsSirenActive;
+                                    Opponents[data.Id].Siren = (data.Flag & (byte)VehicleDataFlags.IsSirenActive) > 0;
 
                                     Opponents[data.Id].IsEngineRunning = data.IsEngineRunning;
                                     Opponents[data.Id].WheelSpeed = data.WheelSpeed;
@@ -917,11 +936,12 @@ namespace GTACoOp
                                     Opponents[data.Id].IsInVehicle = false;
                                     Opponents[data.Id].AimCoords = data.AimCoords.ToVector();
                                     Opponents[data.Id].CurrentWeapon = data.WeaponHash;
-                                    Opponents[data.Id].IsAiming = data.IsAiming;
-                                    Opponents[data.Id].IsJumping = data.IsJumping;
-                                    Opponents[data.Id].IsShooting = data.IsShooting;
+                                    Opponents[data.Id].IsAiming = (data.Flag & (byte)PedDataFlags.IsAiming) > 0;
+                                    Opponents[data.Id].IsJumping = (data.Flag & (byte)PedDataFlags.IsJumping) > 0;
+                                    Opponents[data.Id].IsShooting = (data.Flag & (byte)PedDataFlags.IsShooting) > 0;
+
                                     Opponents[data.Id].Latency = data.Latency;
-                                    Opponents[data.Id].IsParachuteOpen = data.IsParachuteOpen;
+                                    Opponents[data.Id].IsParachuteOpen = (data.Flag & (byte)PedDataFlags.IsParachuteOpen) > 0;
                                     Opponents[data.Id].PedProps = data.PedProps;
                                 }
                             }
@@ -962,9 +982,9 @@ namespace GTACoOp
 
                                     Npcs[data.Name].Steering = data.Steering;
 
-                                    Npcs[data.Name].IsHornPressed = data.IsPressingHorn;
+                                    Npcs[data.Name].IsHornPressed = (data.Flag & (byte)VehicleDataFlags.IsPressingHorn) > 0;
                                     Npcs[data.Name].Speed = data.Speed;
-                                    Npcs[data.Name].Siren = data.IsSirenActive;
+                                    Npcs[data.Name].Siren = (data.Flag & (byte)VehicleDataFlags.IsSirenActive) > 0;
                                 }
                             }
                             break;
@@ -994,10 +1014,11 @@ namespace GTACoOp
                                     Npcs[data.Name].IsInVehicle = false;
                                     Npcs[data.Name].AimCoords = data.AimCoords.ToVector();
                                     Npcs[data.Name].CurrentWeapon = data.WeaponHash;
-                                    Npcs[data.Name].IsAiming = data.IsAiming;
-                                    Npcs[data.Name].IsJumping = data.IsJumping;
-                                    Npcs[data.Name].IsShooting = data.IsShooting;
-                                    Npcs[data.Name].IsParachuteOpen = data.IsParachuteOpen;
+                                    Npcs[data.Name].IsAiming = (data.Flag & (byte)PedDataFlags.IsAiming) > 0;
+                                    Npcs[data.Name].IsJumping = (data.Flag & (byte)PedDataFlags.IsJumping) > 0;
+                                    Npcs[data.Name].IsShooting = (data.Flag & (byte)PedDataFlags.IsShooting) > 0;
+                                    Npcs[data.Name].IsParachuteOpen = (data.Flag & (byte)PedDataFlags.IsParachuteOpen) > 0;
+
                                 }
                             }
                             break;
