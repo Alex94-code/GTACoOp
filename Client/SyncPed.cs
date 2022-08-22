@@ -45,12 +45,20 @@ namespace GTACoOp
         public string Name;
         public bool Siren;
         public bool IsEngineRunning;
+        public bool IsInBurnout;
+        public bool HighBeamsOn;
+        public bool LightsOn;
+        public VehicleLandingGear LandingGear;
+        public int Livery;
+
+
 
         public float Steering;
         public float WheelSpeed;
         public string Plate;
         public int RadioStation;
         private DateTime _stopTime;
+        private bool _lastBurnout;
 
         public float Speed
         {
@@ -190,9 +198,11 @@ namespace GTACoOp
         {
             try
             {
-                const float hRange = 200f;
+                var isPlane = Function.Call<bool>(Hash.IS_THIS_MODEL_A_PLANE, VehicleHash);
+                float hRange = isPlane ? 1200f : 400f;
+
                 var gPos = IsInVehicle ? VehiclePosition : Position;
-                var inRange = Game.Player.Character.IsInRangeOf(gPos, hRange);
+                var inRange = isPlane ? true : Game.Player.Character.IsInRangeOf(gPos, hRange);
 
                 if (inRange && !_isStreamedIn)
                 {
@@ -298,8 +308,9 @@ namespace GTACoOp
 
                     if (MainVehicle != null)
                     {
-                        MainVehicle.PrimaryColor = (VehicleColor)VehiclePrimaryColor;
-                        MainVehicle.SecondaryColor = (VehicleColor)VehicleSecondaryColor;
+                        Function.Call(Hash.SET_VEHICLE_COLOURS, MainVehicle, VehiclePrimaryColor, VehicleSecondaryColor);
+                        MainVehicle.Livery = Livery;
+
                         MainVehicle.Quaternion = VehicleRotation.ToQuaternion();
                         MainVehicle.IsInvincible = true;
                         Character.Task.WarpIntoVehicle(MainVehicle, (VehicleSeat)VehicleSeat);
@@ -365,9 +376,7 @@ namespace GTACoOp
                                 MainVehicle.Repair();
                         }
 
-                        MainVehicle.PrimaryColor = (VehicleColor)VehiclePrimaryColor;
-                        MainVehicle.SecondaryColor = (VehicleColor)VehicleSecondaryColor;
-
+                      
                         MainVehicle.EngineRunning = IsEngineRunning;
 
                         if (Plate != null)
@@ -406,12 +415,40 @@ namespace GTACoOp
                             MainVehicle.SoundHorn(1);
                         }
 
+                        if (IsInBurnout && !_lastBurnout)
+                        {
+                            Function.Call(Hash.SET_VEHICLE_BURNOUT, MainVehicle, true);
+                            Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, Character, MainVehicle, 23, 120000); // 30 - burnout
+                        }
+                        else if (!IsInBurnout && _lastBurnout)
+                        {
+                            Function.Call(Hash.SET_VEHICLE_BURNOUT, MainVehicle, false);
+                            Character.Task.ClearAll();
+                        }
+
+                        _lastBurnout = IsInBurnout;
+
+                        Function.Call(Hash.SET_VEHICLE_BRAKE_LIGHTS, MainVehicle, Speed > 0.2 && _lastSpeed > Speed);
+
+
                         if (MainVehicle.SirenActive && !Siren)
                             MainVehicle.SirenActive = Siren;
                         else if (!MainVehicle.SirenActive && Siren)
                             MainVehicle.SirenActive = Siren;
 
+                        MainVehicle.LightsOn = LightsOn;
+                        MainVehicle.HighBeamsOn = HighBeamsOn;
+                        MainVehicle.SirenActive = Siren;
                         MainVehicle.SteeringAngle = (Steering > 5f || Steering < -5f) ? Steering : 0f;
+                        Function.Call(Hash.SET_VEHICLE_LIVERY, MainVehicle, Livery);
+
+                        Function.Call(Hash.SET_VEHICLE_COLOURS, MainVehicle, VehiclePrimaryColor, VehicleSecondaryColor);
+
+                        if (MainVehicle.Model.IsPlane && LandingGear != MainVehicle.LandingGear)
+                        {
+                            MainVehicle.LandingGear = LandingGear;
+                        }
+
 
                         if (Character.IsOnBike && MainVehicle.ClassType == VehicleClass.Cycles)
                         {
@@ -430,7 +467,7 @@ namespace GTACoOp
                                 StartPedalingAnim(true);
                         }
 
-                        if (Speed > 0.2f)
+                        if (Speed > 0.2f || IsInBurnout)
                         {
                             int currentTime = Environment.TickCount;
                             float alpha = Util.Unlerp(currentInterop.StartTime, currentTime, currentInterop.FinishTime);
@@ -644,17 +681,16 @@ namespace GTACoOp
 
         private string PedalingAnimDict()
         {
-            var hash = (uint)MainVehicle.Model.Hash;
             string anim;
-            switch (hash)
+            switch ((VehicleHash)MainVehicle.Model.Hash)
             {
-                case 1131912276u:
+                case GTA.Native.VehicleHash.Bmx:
                     anim = "veh@bicycle@bmx@front@base";
                     break;
-                case 448402357u:
+                case GTA.Native.VehicleHash.Cruiser:
                     anim = "veh@bicycle@cruiserfront@base";
                     break;
-                case 4108429845u:
+                case GTA.Native.VehicleHash.Scorcher:
                     anim = "veh@bicycle@mountainfront@base";
                     break;
                 default:
@@ -663,26 +699,24 @@ namespace GTACoOp
             }
             return anim;
         }
+        private string PedalingAnimName(bool fast)
+        {
+            return fast ? "fast_pedal_char" : "cruise_pedal_char";
+        }
 
         private bool IsPedaling(bool fast)
         {
-            var animName = fast ? "fast_pedal_char" : "cruise_pedal_char";
-            var animDict = PedalingAnimDict();
-            return Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, Character.Handle, animDict, animName, 3);
+            return Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, Character.Handle, PedalingAnimDict(), PedalingAnimName(fast), 3);
         }
 
         private void StartPedalingAnim(bool fast)
         {
-            var animName = fast ? "fast_pedal_char" : "cruise_pedal_char";
-            var animDict = PedalingAnimDict();
-            Character.Task.PlayAnimation(animDict, animName, 8.0f, -8.0f, -1, AnimationFlags.Loop | AnimationFlags.AllowRotation, 5.0f);
+            Character.Task.PlayAnimation(PedalingAnimDict(), PedalingAnimName(fast), 8.0f, -8.0f, -1, AnimationFlags.Loop | AnimationFlags.AllowRotation, 5.0f);
         }
 
         private void StopPedalingAnim(bool fast)
         {
-            var animName = fast ? "fast_pedal_char" : "cruise_pedal_char";
-            var animDict = PedalingAnimDict();
-            Character.Task.ClearAnimation(animDict, animName);
+            Character.Task.ClearAnimation(PedalingAnimDict(), PedalingAnimName(fast));
         }
 
         public void Clear()
